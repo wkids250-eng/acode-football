@@ -1,12 +1,14 @@
 {
   "name": "Acode Football Predictor",
   "short_name": "Acode FB",
+  "description": "Free football predictions: fixtures, results, BTTS, over/under, HT/FT, exact scores — powered by Elo and Dixon-Coles.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0d1117",
   "theme_color": "#0d1117",
   "icons": [
-    { "src": "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/26bd.png", "sizes": "72x72", "type": "image/png" },
-    { "src": "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/svg/26bd.svg", "sizes": "any", "type": "image/svg+xml" }
+    { "src": "https://commons.wikimedia.org/wiki/Special:FilePath/Soccerball.svg?width=512", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "https://commons.wikimedia.org/wiki/Special:FilePath/Soccerball.svg?width=512", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "https://cdn.jsdelivr.net/gh/twitter/twemoji@14.0.2/assets/72x72/26bd.png", "sizes": "72x72", "type": "image/png" }
   ]
 }
