@@ -249,7 +249,7 @@
       } catch (e) { return null; }
     }
 
-    // ===== SOURCE 3: ESPN (hardened: timeout + retries + stagger) =====
+    // ===== SOURCE 3: ESPN — FIXED: one request PER DAY (ranges now 400) =====
     async function espnOne(url, attempt) {
       attempt = attempt || 0;
       try {
@@ -274,8 +274,8 @@
       let cur = new Date(fromDate);
       const end = new Date(toDate);
       while (cur <= end) {
-        const chunkEnd = new Date(Math.min(cur.getTime() + 29 * 86400000, end.getTime()));
-        const url = "https://site.api.espn.com/apis/site/v2/sports/soccer/" + slug + "/scoreboard?dates=" + fmt(cur) + "-" + fmt(chunkEnd) + "&limit=200";
+        // ONE DAY per request — ESPN rejects date RANGES with 400 now
+        const url = "https://site.api.espn.com/apis/site/v2/sports/soccer/" + slug + "/scoreboard?dates=" + fmt(cur) + "&limit=200";
         const data = await espnOne(url);
         if (data && data.events) {
           for (const ev of data.events) {
@@ -297,8 +297,8 @@
             } catch (e) { }
           }
         }
-        await new Promise(r => setTimeout(r, 300));
-        cur = new Date(chunkEnd.getTime() + 86400000);
+        await new Promise(r => setTimeout(r, 500));
+        cur = new Date(cur.getTime() + 86400000);
       }
       return out.length ? out : null;
     }
@@ -408,7 +408,7 @@
     let searchTerm = "";
 
     async function syncData(full) {
-      updateStatus(full ? "⏳ Full sync — all sources, all seasons… (this can take a few minutes)" : "⏳ Checking sources for updates…");
+      updateStatus(full ? "⏳ Full sync — all sources… (ESPN now asks day-by-day, this takes several minutes)" : "⏳ Checking sources for updates…");
 
       const stored = await dbAll();
       const byKey = new Map(stored.map(m => [m.key, m]));
@@ -444,8 +444,8 @@
             }
           } else if (lg.src === "espn") {
             let from, to;
-            if (full) { from = new Date(today.getTime() - 120 * 86400000); to = new Date(today.getTime() + 30 * 86400000); }
-            else { from = new Date(today.getTime() - 10 * 86400000); to = new Date(today.getTime() + 20 * 86400000); }
+            if (full) { from = new Date(today.getTime() - 60 * 86400000); to = new Date(today.getTime() + 14 * 86400000); }
+            else { from = new Date(today.getTime() - 3 * 86400000); to = new Date(today.getTime() + 7 * 86400000); }
             const cands = await fetchESPN(lg.slug, from, to);
             if (cands) { for (const c of cands) merge(c, lg.name, stats); got = "ESPN"; }
           }
