@@ -75,7 +75,7 @@
   <div class="searchwrap" id="searchwrap" hidden>
     <input id="searchinput" placeholder="Search competitions…" oninput="searchTerm=this.value; if(currentTab==='fixtures'&&!view&&!matchKey) renderFixtures();">
   </div>
-  <div class="status" id="status" onclick="syncData(false)">🗄️ Opening database…</div>
+  <div class="status" id="status" onclick="syncData(true)">🗄️ Opening database…</div>
 
   <div class="tabs">
     <div class="tab active" id="tab-fixtures" onclick="showTab('fixtures')">📅 Matches</div>
