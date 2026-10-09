@@ -189,7 +189,7 @@
     }
     function updateStatus(msg) { document.getElementById("status").textContent = msg; }
 
-    // ===== SOURCES =====
+    // ===== SOURCE 1: openfootball =====
     async function fetchOF(ofCode, season) {
       const urls = [
         "https://cdn.jsdelivr.net/gh/openfootball/football.json@master/" + season + "/" + ofCode + ".json",
@@ -211,6 +211,7 @@
       return null;
     }
 
+    // ===== SOURCE 2: OpenLigaDB (Germany, HT scores included) =====
     async function fetchOL(alias, year, matchdayOnly) {
       const url = matchdayOnly
         ? "https://api.openligadb.de/getmatchdata/" + alias
@@ -248,6 +249,25 @@
       } catch (e) { return null; }
     }
 
+    // ===== SOURCE 3: ESPN (hardened: timeout + retries + stagger) =====
+    async function espnOne(url, attempt) {
+      attempt = attempt || 0;
+      try {
+        const ctrl = new AbortController();
+        const kill = setTimeout(() => ctrl.abort(), 12000);
+        const res = await fetch(url, { signal: ctrl.signal });
+        clearTimeout(kill);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return await res.json();
+      } catch (e) {
+        if (attempt < 2) {
+          await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+          return espnOne(url, attempt + 1);
+        }
+        return null;
+      }
+    }
+
     async function fetchESPN(slug, fromDate, toDate) {
       const fmt = d => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
       let out = [];
@@ -256,36 +276,34 @@
       while (cur <= end) {
         const chunkEnd = new Date(Math.min(cur.getTime() + 29 * 86400000, end.getTime()));
         const url = "https://site.api.espn.com/apis/site/v2/sports/soccer/" + slug + "/scoreboard?dates=" + fmt(cur) + "-" + fmt(chunkEnd) + "&limit=200";
-        try {
-          const res = await fetch(url);
-          if (res.ok) {
-            const data = await res.json();
-            for (const ev of (data.events || [])) {
-              try {
-                const comp = ev.competitions && ev.competitions[0];
-                if (!comp) continue;
-                const home = comp.competitors.find(c => c.homeAway === "home") || comp.competitors[0];
-                const away = comp.competitors.find(c => c.homeAway === "away") || comp.competitors[1];
-                if (!home || !away || !home.team || !away.team) continue;
-                const done = ev.status && ev.status.type && ev.status.type.completed;
-                let score = null;
-                if (done && home.score != null && away.score != null) score = [parseInt(home.score), parseInt(away.score)];
-                let ht = null;
-                if (done && Array.isArray(home.linescores) && Array.isArray(away.linescores) &&
-                    home.linescores.length >= 1 && Number.isFinite(Number(home.linescores[0].value)) &&
-                    Number.isFinite(Number(away.linescores[0].value)))
-                  ht = [Number(home.linescores[0].value), Number(away.linescores[0].value)];
-                out.push({ league: "", season: ev.date.slice(0, 4), date: ev.date.slice(0, 10), time: ev.date.slice(11, 16), round: "", team1: home.team.displayName, team2: away.team.displayName, score: score, ht: ht });
-              } catch (e) { }
-            }
+        const data = await espnOne(url);
+        if (data && data.events) {
+          for (const ev of data.events) {
+            try {
+              const comp = ev.competitions && ev.competitions[0];
+              if (!comp) continue;
+              const home = comp.competitors.find(c => c.homeAway === "home") || comp.competitors[0];
+              const away = comp.competitors.find(c => c.homeAway === "away") || comp.competitors[1];
+              if (!home || !away || !home.team || !away.team) continue;
+              const done = ev.status && ev.status.type && ev.status.type.completed;
+              let score = null;
+              if (done && home.score != null && away.score != null) score = [parseInt(home.score), parseInt(away.score)];
+              let ht = null;
+              if (done && Array.isArray(home.linescores) && Array.isArray(away.linescores) &&
+                  home.linescores.length >= 1 && Number.isFinite(Number(home.linescores[0].value)) &&
+                  Number.isFinite(Number(away.linescores[0].value)))
+                ht = [Number(home.linescores[0].value), Number(away.linescores[0].value)];
+              out.push({ league: "", season: ev.date.slice(0, 4), date: ev.date.slice(0, 10), time: ev.date.slice(11, 16), round: "", team1: home.team.displayName, team2: away.team.displayName, score: score, ht: ht });
+            } catch (e) { }
           }
-        } catch (e) { }
+        }
+        await new Promise(r => setTimeout(r, 300));
         cur = new Date(chunkEnd.getTime() + 86400000);
       }
       return out.length ? out : null;
     }
 
-    // ===== FUZZY MATCH / MERGE =====
+    // ===== SMART MERGE =====
     function nameTokens(s) {
       s = String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
       s = s.replace(/[^a-z0-9 ]/g, " ");
@@ -338,7 +356,7 @@
       };
     }
 
-    // ===== DEEP DEDUPE: removes old duplicates already stored =====
+    // ===== DEEP DEDUPE =====
     function dedupeAll(byKey, stats) {
       const arr = [...byKey.values()];
       const tok = new Map();
@@ -390,48 +408,52 @@
     let searchTerm = "";
 
     async function syncData(full) {
-      updateStatus(full ? "⏳ Full sync — all sources, all seasons…" : "⏳ Checking sources for updates…");
+      updateStatus(full ? "⏳ Full sync — all sources, all seasons… (this can take a few minutes)" : "⏳ Checking sources for updates…");
 
       const stored = await dbAll();
       const byKey = new Map(stored.map(m => [m.key, m]));
       const merge = makeMerger(byKey);
       const stats = { added: 0, updated: 0, leaguesOk: 0, cleaned: 0 };
-      const sourcesUsed = new Set();
+      const srcCount = new Map();
       const today = new Date();
 
       for (const lg of LEAGUES) {
-        let got = false;
+        let got = null;
         try {
           if (lg.src === "openliga") {
             let md = await fetchOL(lg.ol, lg.olYear, !full);
-            if (md) { for (const c of md) merge(c, lg.name, stats); got = true; sourcesUsed.add("OpenLigaDB"); }
+            if (md) got = "OpenLigaDB";
             else if (lg.ofFb) {
               for (const season of SEASONS) {
                 const fb = await fetchOF(lg.ofFb, season);
-                if (fb) { for (const c of fb) merge(c, lg.name, stats); got = true; sourcesUsed.add("openfootball"); break; }
+                if (fb) { md = fb; got = "openfootball"; break; }
               }
             }
+            if (md) for (const c of md) merge(c, lg.name, stats);
           } else if (lg.src === "openfootball") {
             const seasons = full ? SEASONS : [SEASONS[0]];
             for (const season of seasons) {
               const cands = await fetchOF(lg.of, season);
-              if (cands) { for (const c of cands) merge(c, lg.name, stats); got = true; sourcesUsed.add("openfootball"); }
+              if (cands) { for (const c of cands) merge(c, lg.name, stats); got = "openfootball"; }
             }
             if (full && lg.espnFb) {
               const from = new Date(today.getTime() - 35 * 86400000);
               const to = new Date(today.getTime() + 10 * 86400000);
               const extra = await fetchESPN(lg.espnFb, from, to);
-              if (extra) { for (const c of extra) merge(c, lg.name, stats); sourcesUsed.add("ESPN"); }
+              if (extra) { for (const c of extra) merge(c, lg.name, stats); if (!got) got = "ESPN"; }
             }
           } else if (lg.src === "espn") {
             let from, to;
-            if (full) { from = new Date(today.getTime() - 150 * 86400000); to = new Date(today.getTime() + 45 * 86400000); }
+            if (full) { from = new Date(today.getTime() - 120 * 86400000); to = new Date(today.getTime() + 30 * 86400000); }
             else { from = new Date(today.getTime() - 10 * 86400000); to = new Date(today.getTime() + 20 * 86400000); }
             const cands = await fetchESPN(lg.slug, from, to);
-            if (cands) { for (const c of cands) merge(c, lg.name, stats); got = true; sourcesUsed.add("ESPN"); }
+            if (cands) { for (const c of cands) merge(c, lg.name, stats); got = "ESPN"; }
           }
         } catch (e) { }
-        if (got) stats.leaguesOk++;
+        if (got) {
+          stats.leaguesOk++;
+          srcCount.set(got, (srcCount.get(got) || 0) + 1);
+        }
       }
 
       dedupeAll(byKey, stats);
@@ -447,9 +469,10 @@
       if (stats.leaguesOk === 0) {
         updateStatus("📴 Offline — showing " + ALL.length + " stored matches.\nConnect internet, then tap here.");
       } else {
+        const srcLine = [...srcCount.entries()].map(([k, v]) => k + "×" + v).join(" · ");
         updateStatus("🗄️ " + ALL.length + " matches · Leagues: " + stats.leaguesOk + "/" + LEAGUES.length +
           " · 🆕 " + stats.added + " · ♻️ " + stats.updated + (stats.cleaned ? " · 🧹 " + stats.cleaned + " duplicates removed" : "") +
-          "\nSources: " + [...sourcesUsed].join(" · ") + " · last: " + mode + " · tap for FULL sync");
+          "\nSources: " + srcLine + " · last: " + mode + " · tap for FULL sync");
       }
       renderCurrent();
       updatePredictionsLog();
@@ -861,7 +884,7 @@
       list.innerHTML = html;
     }
 
-    // ===== MATCH DETAIL (prediction on tap) =====
+    // ===== MATCH DETAIL =====
     function pickChip(pk) {
       const disp = pk.k === "htft" ? pk.pick[0] + "/" + pk.pick[1] : pk.pick;
       let cls = "pick", mark = "";
