@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Acode Football</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    * { box-sizing: border-box; }
+    body { font-family: sans-serif; background: #0d1117; color: #e6e6e6; padding: 10px 12px 20px; margin: 0; }
+    .topbar { display: flex; align-items: center; gap: 10px; padding: 8px 2px; }
+    .tbtitle { flex: 1; font-size: 20px; font-weight: bold; }
+    .iconbtn { background: none; border: none; color: #e6e6e6; font-size: 22px; padding: 6px 8px; }
+    .searchwrap { display: flex; gap: 8px; margin: 4px 0 8px; }
+    .searchwrap input { flex: 1; background: #161b22; border: 1px solid #30363d; color: #e6e6e6; padding: 10px 12px; border-radius: 10px; font-size: 14px; }
+    .status { padding: 12px; border-radius: 10px; background: #161b22; border: 1px solid #30363d; font-size: 13px; line-height: 1.5; white-space: pre-line; }
+    .tabs { display: flex; gap: 8px; margin: 12px 0; }
+    .tab { flex: 1; padding: 10px 4px; text-align: center; border-radius: 10px; background: #161b22; border: 1px solid #30363d; color: #8b949e; font-weight: bold; font-size: 14px; }
+    .tab.active { background: #1f6feb; color: #fff; border-color: #1f6feb; }
+    .dates { display: flex; gap: 6px; overflow-x: auto; padding: 6px 2px 10px; scrollbar-width: none; }
+    .dchip { flex: 0 0 auto; min-width: 56px; text-align: center; padding: 7px 6px; border-radius: 10px; background: #161b22; border: 1px solid #30363d; border-bottom: 3px solid #30363d; }
+    .dchip .dw { font-size: 10px; color: #8b949e; letter-spacing: 1px; }
+    .dchip .dd { font-size: 13px; font-weight: bold; }
+    .dchip.today .dw, .dchip.today .dd { color: #f85149; }
+    .dchip.sel { border-color: #f85149; border-bottom: 3px solid #f85149; background: #1c1420; }
+    .allrow { display: flex; align-items: center; gap: 10px; padding: 14px 12px; background: #161b22; border: 1px solid #30363d; border-radius: 10px; margin: 8px 0 4px; }
+    .badge { background: #f85149; color: #fff; border-radius: 8px; padding: 3px 10px; font-weight: bold; font-size: 14px; }
+    .gray { color: #8b949e; font-weight: bold; }
+    .sechead { color: #f0b72f; font-size: 12px; font-weight: bold; letter-spacing: 1px; margin: 16px 2px 8px; }
+    .lwrap { background: #161b22; border: 1px solid #30363d; border-radius: 10px; overflow: hidden; }
+    .lrow { display: flex; align-items: center; gap: 12px; padding: 13px 12px; border-top: 1px solid #21262d; }
+    .lrow:first-child { border-top: none; }
+    .lflag { font-size: 24px; }
+    .lmeta { flex: 1; }
+    .lcountry { font-size: 10px; color: #8b949e; letter-spacing: 1px; }
+    .lname { font-weight: bold; font-size: 15px; }
+    .lcount { color: #8b949e; font-weight: bold; font-size: 15px; }
+    .day { color: #58a6ff; font-size: 13px; font-weight: bold; margin: 14px 2px 6px; }
+    .mrow { display: flex; align-items: center; gap: 10px; background: #161b22; border: 1px solid #30363d; border-radius: 10px; padding: 10px 14px; margin: 6px 0; }
+    .mteams { flex: 1; }
+    .t1, .t2 { font-weight: 600; font-size: 14px; line-height: 1.5; }
+    .mcenter { width: 78px; text-align: center; }
+    .mtime { color: #f0b72f; font-weight: bold; }
+    .mscore { color: #3fb950; font-weight: bold; font-size: 16px; }
+    .htmini { font-size: 10px; color: #8b949e; }
+    .empty { text-align: center; color: #8b949e; padding: 30px 10px; }
+    .disclaimer { font-size: 11px; color: #8b949e; padding: 8px 2px; line-height: 1.4; }
+    .track { font-size: 12px; padding: 10px 12px; border-radius: 10px; background: #12261a; border: 1px solid #1f4d2e; color: #7ee787; margin-bottom: 8px; line-height: 1.5; }
+    .elo { color: #58a6ff; font-size: 12px; margin: 4px 0 6px; }
+    .prow { display: flex; align-items: center; gap: 6px; margin: 3px 0; font-size: 12px; }
+    .plabel { width: 42px; color: #8b949e; }
+    .pbar-track { flex: 1; height: 10px; border-radius: 5px; background: #21262d; overflow: hidden; }
+    .pbar { height: 100%; border-radius: 5px; }
+    .pval { width: 40px; text-align: right; font-weight: bold; }
+    .b-home { background: #3fb950; }
+    .b-draw { background: #d29922; }
+    .b-away { background: #f85149; }
+    .pgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-top: 8px; }
+    .pick { font-size: 11px; background: #1c2128; border: 1px solid #30363d; padding: 6px 8px; border-radius: 8px; line-height: 1.4; }
+    .pick.hit { border-color: #1f4d2e; background: #12261a; }
+    .pick.miss { border-color: #5c2320; background: #2d1214; }
+    .ptag { color: #f0b72f; font-weight: bold; }
+    .verdict { font-size: 12px; margin-top: 6px; padding: 8px 10px; border-radius: 8px; font-weight: bold; }
+    .vwin { background: #12261a; color: #3fb950; border: 1px solid #1f4d2e; }
+    .vlose { background: #2d1214; color: #f85149; border: 1px solid #5c2320; }
+    .ok { color: #3fb950; }
+    .miss { color: #f85149; }
+    .loadmore { text-align: center; padding: 12px; margin: 10px 0; background: #1f6feb; color: #fff; border-radius: 10px; font-weight: bold; }
+    .backline { margin-bottom: 4px; }
+  </style>
+</head>
+<body>
+
+  <div class="topbar" id="topbar"></div>
+  <div class="searchwrap" id="searchwrap" hidden>
+    <input id="searchinput" placeholder="Search competitions…" oninput="searchTerm=this.value; if(currentTab==='fixtures'&&!view&&!matchKey) renderFixtures();">
+  </div>
+  <div class="status" id="status" onclick="syncData(true)">🗄️ Opening database…</div>
+
+  <div class="tabs">
+    <div class="tab active" id="tab-fixtures" onclick="showTab('fixtures')">📅 Matches</div>
+    <div class="tab" id="tab-results" onclick="showTab('results')">✅ Results</div>
+  </div>
+
+  <div class="dates" id="dates" hidden></div>
+  <div id="list"></div>
+
+  <script>
+    const SEASONS = ["2026-27", "2025-26", "2024-25", "2023-24", "2022-23"];
+    const REFRESH_MS = 60000;
+    const FULL_EVERY_MS = 12 * 3600 * 1000;
+    const DB_NAME = "acode-football", STORE = "matches", PSTORE = "preds";
+    const TIMEMODE = "tv3"; // OpenLigaDB confirmed UTC → convert to Berlin TV time
+
+    const LEAGUES = [
+      { name: "Bundesliga",            country: "GERMANY",     flag: "🇩🇪", src: "openliga", ol: "bl1", olYear: 2026, ofFb: "de.1", tz: "Europe/Berlin" },
+      { name: "2. Bundesliga",         country: "GERMANY",     flag: "🇩🇪", src: "openliga", ol: "bl2", olYear: 2026, tz: "Europe/Berlin" },
+      { name: "Premier League",        country: "ENGLAND",     flag: "🏴",  src: "openfootball", of: "en.1", espnFb: "eng.1", tz: "Europe/London" },
+      { name: "La Liga",               country: "SPAIN",       flag: "🇪🇸", src: "openfootball", of: "es.1", espnFb: "esp.1", tz: "Europe/Madrid" },
+      { name: "Serie A",               country: "ITALY",       flag: "🇮🇹", src: "openfootball", of: "it.1", espnFb: "ita.1", tz: "Europe/Rome" },
+      { name: "Ligue 1",               country: "FRANCE",      flag: "🇫🇷", src: "openfootball", of: "fr.1", espnFb: "fra.1", tz: "Europe/Paris" },
+      { name: "UEFA Champions League", country: "EUROPE",      flag: "🇪🇺", src: "espn", slug: "uefa.champions", tz: "Europe/Paris" },
+      { name: "UEFA Europa League",    country: "EUROPE",      flag: "🇪🇺", src: "espn", slug: "uefa.europa", tz: "Europe/Paris" },
+      { name: "UEFA Conference League",country: "EUROPE",      flag: "🇪🇺", src: "espn", slug: "uefa.europa.conf", tz: "Europe/Paris" },
+      { name: "Championship",          country: "ENGLAND",     flag: "🏴",  src: "espn", slug: "eng.2", tz: "Europe/London" },
+      { name: "Eredivisie",            country: "NETHERLANDS", flag: "🇳🇱", src: "espn", slug: "ned.1", tz: "Europe/Amsterdam" },
+      { name: "Primeira Liga",         country: "PORTUGAL",    flag: "🇵🇹", src: "espn", slug: "por.1", tz: "Europe/Lisbon" }
+    ];
+
+    function openDB() {
+      return new Promise((resolve, reject) => {
+        const req = indexedDB.open(DB_NAME, 2);
+        req.onupgradeneeded = () => {
+          const db = req.result;
+          if (!db.objectStoreNames.contains(STORE)) db.createObjectStore(STORE, { keyPath: "key" });
+          if (!db.objectStoreNames.contains(PSTORE)) db.createObjectStore(PSTORE, { keyPath: "key" });
+        };
+        req.onsuccess = () => resolve(req.result);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function dbAll() {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const req = db.transaction(STORE, "readonly").objectStore(STORE).getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function dbSaveAll(matches) {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(STORE, "readwrite");
+        for (const m of matches) tx.objectStore(STORE).put(m);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+    async function dbAllPreds() {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const req = db.transaction(PSTORE, "readonly").objectStore(PSTORE).getAll();
+        req.onsuccess = () => resolve(req.result || []);
+        req.onerror = () => reject(req.error);
+      });
+    }
+    async function dbPutPreds(list) {
+      const db = await openDB();
+      return new Promise((resolve, reject) => {
+        const tx = db.transaction(PSTORE, "readwrite");
+        for (const p of list) tx.objectStore(PSTORE).put(p);
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error);
+      });
+    }
+
+    function normTeam(t) { return String(t).toLowerCase().trim(); }
+    function extractMatches(data) {
+      if (Array.isArray(data.matches)) return data.matches;
+      if (Array.isArray(data.rounds)) {
+        const all = [];
+        for (const r of data.rounds) for (const m of (r.matches || [])) all.push(m);
+        return all;
+      }
+      return [];
+    }
+    function getScore(m) {
+      if (m.score && Array.isArray(m.score.ft)) return m.score.ft;
+      if (Array.isArray(m.ft)) return m.ft;
+      if (m.score1 != null && m.score2 != null) return [m.score1, m.score2];
+      return null;
+    }
+    function getHT(m) {
+      if (m.score && Array.isArray(m.score.ht)) return m.score.ht;
+      if (Array.isArray(m.ht)) return m.ht;
+      return null;
+    }
+    function isoOf(d) {
+      return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    }
+    function isoShift(d, n) {
+      const t = new Date(d + "T12:00:00");
+      t.setDate(t.getDate() + n);
+      return isoOf(t);
+    }
+    function niceDate(d) {
+      try {
+        return new Date(d + "T12:00:00").toLocaleDateString(undefined,
+          { weekday: "short", day: "numeric", month: "short", year: "numeric" });
+      } catch (e) { return d; }
+    }
+    function updateStatus(msg) { document.getElementById("status").textContent = msg; }
+
+    // ===== TIME HELPERS =====
+    function instantToWall(d, tz) {
+      try {
+        const s = d.toLocaleString("en-US", { timeZone: tz, hour12: false });
+        const m = s.match(/(\d+)\/(\d+)\/(\d+),\s*(\d+):(\d+):(\d+)/);
+        if (!m) return null;
+        const hh = String(Number(m[4]) % 24).padStart(2, "0");
+        return {
+          date: m[3] + "-" + String(Number(m[1])).padStart(2, "0") + "-" + String(Number(m[2])).padStart(2, "0"),
+          time: hh + ":" + String(Number(m[5])).padStart(2, "0")
+        };
+      } catch (e) { return null; }
+    }
+    function wallToISO(dateStr, timeStr, tz) {
+      try {
+        const asUTC = new Date(dateStr + "T" + timeStr + ":00Z");
+        const inTZ = new Date(asUTC.toLocaleString("en-US", { timeZone: tz }));
+        return new Date(asUTC.getTime() - (inTZ.getTime() - asUTC.getTime())).toISOString();
+      } catch (e) { return null; }
+    }
+
+    // OpenLigaDB ships UTC WITHOUT saying so (proven vs FlashScore) → attach Z, convert to Berlin TV time
+    function olWallUTC(matchDateTime) {
+      const s = String(matchDateTime || "");
+      if (!s || s.length < 16) return null;
+      const t = s.slice(0, 19);
+      const asUTC = new Date(t + "Z");
+      const wall = instantToWall(asUTC, "Europe/Berlin");
+      if (wall) return wall;
+      return { date: s.slice(0, 10), time: s.slice(11, 16) };
+    }
+
+    // ===== SOURCE 1: openfootball (times already league-local → pass through) =====
+    async function fetchOF(ofCode, season, tz) {
+      const urls = [
+        "https://cdn.jsdelivr.net/gh/openfootball/football.json@master/" + season + "/" + ofCode + ".json",
+        "https://raw.githubusercontent.com/openfootball/football.json/master/" + season + "/" + ofCode + ".json"
+      ];
+      for (const url of urls) {
+        try {
+          const res = await fetch(url);
+          if (!res.ok) continue;
+          const data = await res.json();
+          const out = [];
+          for (const raw of extractMatches(data)) {
+            if (!raw.date || !raw.team1 || !raw.team2) continue;
+            out.push({ league: "", season: season, date: raw.date, time: raw.time || "", iso: raw.time ? wallToISO(raw.date, raw.time, tz) : null, round: raw.round || "", team1: raw.team1, team2: raw.team2, score: getScore(raw), ht: getHT(raw) });
+          }
+          return out.length ? out : null;
+        } catch (e) { }
+      }
+      return null;
+    }
+
+    // ===== SOURCE 2: OpenLigaDB (UTC → Berlin TV time) =====
+    async function fetchOL(alias, year, matchdayOnly) {
+      const url = matchdayOnly
+        ? "https://api.openligadb.de/getmatchdata/" + alias
+        : "https://api.openligadb.de/getmatchdata/" + alias + "/" + year;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const arr = await res.json();
+        if (!Array.isArray(arr) || arr.length === 0) return null;
+        const out = [];
+        for (const m of arr) {
+          if (!m.matchDateTime || !m.team1 || !m.team2) continue;
+          const wall = olWallUTC(m.matchDateTime);
+          if (!wall) continue;
+          let score = null, ht = null;
+          if (m.matchIsFinished && Array.isArray(m.matchResults) && m.matchResults.length) {
+            let ft = null, half = null;
+            for (const r of m.matchResults) {
+              const nm = String(r.resultName || "");
+              if (/halbzeit/i.test(nm)) half = r;
+              else if (/end/i.test(nm)) ft = r;
+            }
+            if (!ft) ft = m.matchResults.find(r => r.resultTypeID === 1) || m.matchResults[m.matchResults.length - 1];
+            if (!half) half = m.matchResults.find(r => r.resultTypeID === 2);
+            if (ft) score = [ft.pointsTeam1, ft.pointsTeam2];
+            if (half) {
+              const cand = [half.pointsTeam1, half.pointsTeam2];
+              if (!score || cand[0] !== score[0] || cand[1] !== score[1]) ht = cand;
+            }
+          }
+          out.push({ league: "", season: year + "-" + String(year + 1).slice(2), date: wall.date, time: wall.time, iso: wallToISO(wall.date, wall.time, "Europe/Berlin"), round: m.group ? String(m.group.groupOrderID || "") : "", team1: m.team1.teamName, team2: m.team2.teamName, score: score, ht: ht });
+        }
+        return out.length ? out : null;
+      } catch (e) { return null; }
+    }
+
+    // ===== SOURCE 3: ESPN (UTC instants → league wall time) =====
+    async function espnOne(url, attempt) {
+      attempt = attempt || 0;
+      try {
+        const ctrl = new AbortController();
+        const kill = setTimeout(() => ctrl.abort(), 12000);
+        const res = await fetch(url, { signal: ctrl.signal });
+        clearTimeout(kill);
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return await res.json();
+      } catch (e) {
+        if (attempt < 2) {
+          await new Promise(r => setTimeout(r, 800 * (attempt + 1)));
+          return espnOne(url, attempt + 1);
+        }
+        return null;
+      }
+    }
+
+    async function fetchESPN(slug, fromDate, toDate, tz) {
+      const fmt = d => d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0");
+      let out = [];
+      let cur = new Date(fromDate);
+      const end = new Date(toDate);
+      while (cur <= end) {
+        const url = "https://site.api.espn.com/apis/site/v2/sports/soccer/" + slug + "/scoreboard?dates=" + fmt(cur) + "&limit=200";
+        const data = await espnOne(url);
+        if (data && data.events) {
+          for (const ev of data.events) {
+            try {
+              const comp = ev.competitions && ev.competitions[0];
+              if (!comp) continue;
+              const home = comp.competitors.find(c => c.homeAway === "home") || comp.competitors[0];
+              const away = comp.competitors.find(c => c.homeAway === "away") || comp.competitors[1];
+              if (!home || !away || !home.team || !away.team) continue;
+              const done = ev.status && ev.status.type && ev.status.type.completed;
+              let score = null;
+              if (done && home.score != null && away.score != null) score = [parseInt(home.score), parseInt(away.score)];
+              let ht = null;
+              if (done && Array.isArray(home.linescores) && Array.isArray(away.linescores) &&
+                  home.linescores.length >= 1 && Number.isFinite(Number(home.linescores[0].value)) &&
+                  Number.isFinite(Number(away.linescores[0].value)))
+                ht = [Number(home.linescores[0].value), Number(away.linescores[0].value)];
+              const inst = new Date(ev.date);
+              const wall = instantToWall(inst, tz) || { date: isoOf(inst), time: "" };
+              out.push({ league: "", season: String(inst.getFullYear()), date: wall.date, time: wall.time, iso: inst.toISOString(), round: "", team1: home.team.displayName, team2: away.team.displayName, score: score, ht: ht });
+            } catch (e) { }
+          }
+        }
+        await new Promise(r => setTimeout(r, 500));
+        cur = new Date(cur.getTime() + 86400000);
+      }
+      return out.length ? out : null;
+    }
+
+    // ===== SMART MERGE =====
+    function nameTokens(s) {
+      s = String(s).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+      s = s.replace(/[^a-z0-9 ]/g, " ");
+      const stop = new Set(["fc", "cf", "sc", "ac", "as", "ss", "sv", "tsv", "vfl", "vfb", "bsc", "rb", "ca", "cd", "sd", "ud", "us", "ssc", "rc", "rcd", "sk", "nk", "fk", "if", "bk", "1899", "1893", "1900", "04", "05", "09", "1848", "1910", "1", "2", "u19", "ii"]);
+      return s.split(/\s+/).filter(t => t && !stop.has(t) && t.length > 1);
+    }
+    function sameTeams(t1a, t2a, t1b, t2b) {
+      const A1 = new Set(nameTokens(t1a)), A2 = new Set(nameTokens(t2a));
+      const B1 = new Set(nameTokens(t1b)), B2 = new Set(nameTokens(t2b));
+      const inter = (X, Y) => { let n = 0; for (const t of X) if (Y.has(t)) n++; return n; };
+      return inter(A1, B1) >= 1 && inter(A2, B2) >= 1 && (inter(A1, B1) + inter(A2, B2)) >= 2;
+    }
+    function sameSet(A, B) { let n = 0; for (const t of A) if (B.has(t)) n++; return n >= 1; }
+
+    function makeMerger(byKey) {
+      const idx = new Map();
+      for (const m of byKey.values()) {
+        const k = m.league + "|" + m.date;
+        if (!idx.has(k)) idx.set(k, []);
+        idx.get(k).push(m);
+      }
+      function fill(ex, cand, stats) {
+        let changed = false;
+        if (!ex.score && cand.score) { ex.score = cand.score; changed = true; }
+        if (!ex.ht && cand.ht) { ex.ht = cand.ht; changed = true; }
+        if (!ex.time && cand.time) { ex.time = cand.time; changed = true; }
+        if (changed) stats.updated++;
+      }
+      return function merge(cand, leagueName, stats) {
+        cand.league = leagueName;
+        const key = leagueName + "|" + cand.date + "|" + normTeam(cand.team1) + "|" + normTeam(cand.team2);
+        const ex = byKey.get(key);
+        if (ex) { fill(ex, cand, stats); return; }
+        const bucket = idx.get(leagueName + "|" + cand.date) || [];
+        let hit = null;
+        for (const other of bucket) {
+          if (sameTeams(other.team1, cand.team1, other.team2, cand.team2)) {
+            if (hit) { hit = "AMBIGUOUS"; break; }
+            hit = other;
+          }
+        }
+        if (hit && hit !== "AMBIGUOUS") { fill(hit, cand, stats); return; }
+        if (hit === "AMBIGUOUS") return;
+        cand.key = key;
+        byKey.set(key, cand);
+        const bk = leagueName + "|" + cand.date;
+        if (!idx.has(bk)) idx.set(bk, []);
+        idx.get(bk).push(cand);
+        stats.added++;
+      };
+    }
+
+    function dedupeAll(byKey, stats) {
+      const arr = [...byKey.values()];
+      const tok = new Map();
+      for (const m of arr) tok.set(m, [new Set(nameTokens(m.team1)), new Set(nameTokens(m.team2))]);
+      const buckets = new Map();
+      for (const m of arr) {
+        const k = m.league + "|" + m.date;
+        if (!buckets.has(k)) buckets.set(k, []);
+        buckets.get(k).push(m);
+      }
+      const toRemove = new Set();
+      for (const m of arr) {
+        if (toRemove.has(m)) continue;
+        const T = tok.get(m);
+        for (const off of [0, 1, -1]) {
+          const b = buckets.get(m.league + "|" + isoShift(m.date, off));
+          if (!b) continue;
+          for (const o of b) {
+            if (o === m || toRemove.has(o)) continue;
+            if (!sameSet(T[0], tok.get(o)[0]) || !sameSet(T[1], tok.get(o)[1])) continue;
+            if (m.score && o.score && (m.score[0] !== o.score[0] || m.score[1] !== o.score[1])) continue;
+            const keep = (o.score && !m.score) ? o : m;
+            const drop = keep === m ? o : m;
+            if (!keep.score && drop.score) keep.score = drop.score;
+            if (!keep.ht && drop.ht) keep.ht = drop.ht;
+            if (!keep.time && drop.time) keep.time = drop.time;
+            toRemove.add(drop);
+            stats.cleaned++;
+            if (drop === m) break;
+          }
+          if (toRemove.has(m)) break;
+        }
+      }
+      for (const m of toRemove) byKey.delete(m.key);
+    }
+
+    let ALL = [];
+    let MATCHBYKEY = new Map();
+    let SCORED = 0;
+    let currentTab = "fixtures";
+    let ENGINE = null;
+    let TRACK = null;
+    let PMAP = new Map();
+
+    let selDate = isoOf(new Date());
+    let view = null;
+    let matchKey = null;
+    let searchOpen = false;
+    let searchTerm = "";
+    let syncing = false;
+
+    async function syncData(full) {
+      if (syncing) return;
+      syncing = true;
+
+      const stored = await dbAll();
+      const byKey = new Map(stored.map(m => [m.key, m]));
+      const merge = makeMerger(byKey);
+      const stats = { added: 0, updated: 0, leaguesOk: 0, cleaned: 0 };
+      const srcCount = new Map();
+      const today = new Date();
+
+      for (const lg of LEAGUES) {
+        let got = null;
+        try {
+          if (lg.src === "openliga") {
+            let md = await fetchOL(lg.ol, lg.olYear, !full);
+            if (md) got = "OpenLigaDB";
+            else if (lg.ofFb) {
+              for (const season of SEASONS) {
+                const fb = await fetchOF(lg.ofFb, season, lg.tz);
+                if (fb) { md = fb; got = "openfootball"; break; }
+              }
+            }
+            if (md) for (const c of md) merge(c, lg.name, stats);
+          } else if (lg.src === "openfootball") {
+            const seasons = full ? SEASONS : [SEASONS[0]];
+            for (const season of seasons) {
+              const cands = await fetchOF(lg.of, season, lg.tz);
+              if (cands) { for (const c of cands) merge(c, lg.name, stats); got = "openfootball"; }
+            }
+            if (full && lg.espnFb) {
+              const from = new Date(today.getTime() - 35 * 86400000);
+              const to = new Date(today.getTime() + 10 * 86400000);
+              const extra = await fetchESPN(lg.espnFb, from, to, lg.tz);
+              if (extra) { for (const c of extra) merge(c, lg.name, stats); if (!got) got = "ESPN"; }
+            }
+          } else if (lg.src === "espn") {
+            let from, to;
+            if (full) { from = new Date(today.getTime() - 60 * 86400000); to = new Date(today.getTime() + 14 * 86400000); }
+            else { from = new Date(today.getTime() - 1 * 86400000); to = new Date(today.getTime() + 2 * 86400000); }
+            const cands = await fetchESPN(lg.slug, from, to, lg.tz);
+            if (cands) { for (const c of cands) merge(c, lg.name, stats); got = "ESPN"; }
+          }
+        } catch (e) { }
+        if (got) {
+          stats.leaguesOk++;
+          srcCount.set(got, (srcCount.get(got) || 0) + 1);
+        }
+      }
+
+      dedupeAll(byKey, stats);
+
+      ALL = [...byKey.values()];
+      ALL.sort((a, b) => a.date.localeCompare(b.date));
+      MATCHBYKEY = new Map(ALL.map(m => [m.key, m]));
+      SCORED = ALL.filter(m => m.score).length;
+      await dbSaveAll(ALL);
+      ENGINE = null;
+
+      if (stats.leaguesOk === 0) {
+        updateStatus("📴 Offline — showing " + ALL.length + " stored matches.\nConnect internet, then tap here.");
+      } else {
+        const srcLine = [...srcCount.entries()].map(([k, v]) => k + "×" + v).join(" · ");
+        updateStatus("🗄️ " + ALL.length + " matches · Leagues: " + stats.leaguesOk + "/" + LEAGUES.length +
+          " · 🆕 " + stats.added + " · ♻️ " + stats.updated +
+          "\nSources: " + srcLine + " · times = TV time (league local) · tap for FULL sync");
+      }
+      syncing = false;
+      renderCurrent();
+      updatePredictionsLog();
+    }
+
+    // ================= ENGINE V2.1 =================
+    const HALF_LIFE_DAYS = 180;
+    const DECAY = Math.log(2) / HALF_LIFE_DAYS;
+    const RHO = -0.10;
+    const HTF = 0.45;
+    const fact = [1, 1, 2, 6, 24, 120, 720, 5040, 40320];
+    function poisson(k, l) { return Math.exp(-l) * Math.pow(l, k) / fact[k]; }
+    function resLetter(i, j) { return i > j ? "H" : (i === j ? "D" : "A"); }
+
+    function buildEngine(matches) {
+      const now = Date.now();
+      const ratings = new Map();
+      const rec = new Map();
+      const lg = new Map();
+      let gWH = 0, gWA = 0, gW = 0;
+      const getRec = (k, league) => {
+        let r = rec.get(k);
+        if (!r) { r = { league, sgfH: 0, sgaH: 0, wH: 0, sgfA: 0, sgaA: 0, wA: 0, sgfAll: 0, sgaAll: 0, wAll: 0 }; rec.set(k, r); }
+        return r;
+      };
+      const getLg = (name) => {
+        let s = lg.get(name);
+        if (!s) { s = { wH: 0, wA: 0, W: 0 }; lg.set(name, s); }
+        return s;
+      };
+      for (const m of matches) {
+        if (!m.score) continue;
+        const g1 = m.score[0], g2 = m.score[1];
+        let days = (now - new Date(m.date + "T12:00:00").getTime()) / 86400000;
+        if (days < 0) days = 0;
+        const w = Math.exp(-DECAY * days);
+        const r1 = (ratings.get(m.team1) || 1500) + 65;
+        const r2 = ratings.get(m.team2) || 1500;
+        const exp1 = 1 / (1 + Math.pow(10, (r2 - r1) / 400));
+        const act1 = g1 > g2 ? 1 : (g1 === g2 ? 0.5 : 0);
+        const diff = Math.abs(g1 - g2);
+        const gd = diff >= 3 ? 1.5 : (diff === 2 ? 1.2 : 1);
+        const delta = 32 * gd * (act1 - exp1);
+        ratings.set(m.team1, (ratings.get(m.team1) || 1500) + delta);
+        ratings.set(m.team2, (ratings.get(m.team2) || 1500) - delta);
+        const L = getLg(m.league);
+        L.wH += w * g1; L.wA += w * g2; L.W += w;
+        gWH += w * g1; gWA += w * g2; gW += w;
+        const h = getRec(m.league + "|" + m.team1, m.league);
+        h.sgfH += w * g1; h.sgaH += w * g2; h.wH += w;
+        h.sgfAll += w * g1; h.sgaAll += w * g2; h.wAll += w;
+        const a = getRec(m.league + "|" + m.team2, m.league);
+        a.sgfA += w * g2; a.sgaA += w * g1; a.wA += w;
+        a.sgfAll += w * g2; a.sgaAll += w * g1; a.wAll += w;
+      }
+      const globalH = gW > 0 ? gWH / gW : 1.5;
+      const globalA = gW > 0 ? gWA / gW : 1.1;
+      const leagueAvg = new Map();
+      for (const [name, s] of lg) {
+        leagueAvg.set(name, s.W >= 20 ? { H: s.wH / s.W, A: s.wA / s.W } : { H: globalH, A: globalA });
+      }
+      const strengths = new Map();
+      for (const [k, r] of rec) {
+        const base = leagueAvg.get(r.league) || { H: globalH, A: globalA };
+        const avgAll = (base.H + base.A) / 2;
+        let attH, defH, attA, defA;
+        if (r.wH >= 6) { attH = (r.sgfH / r.wH) / base.H; defH = (r.sgaH / r.wH) / base.A; }
+        else if (r.wAll >= 3) { attH = (r.sgfAll / r.wAll) / avgAll; defH = (r.sgaAll / r.wAll) / avgAll; }
+        else { attH = 1; defH = 1; }
+        if (r.wA >= 6) { attA = (r.sgfA / r.wA) / base.A; defA = (r.sgaA / r.wA) / base.H; }
+        else if (r.wAll >= 3) { attA = (r.sgfAll / r.wAll) / avgAll; defA = (r.sgaAll / r.wAll) / avgAll; }
+        else { attA = 1; defA = 1; }
+        strengths.set(k, { attH, defH, attA, defA, wAll: r.wAll });
+      }
+      return { ratings, strengths, leagueAvg, globalH, globalA };
+    }
+
+    function predict(engine, m) {
+      const FB = { attH: 1, defH: 1, attA: 1, defA: 1, wAll: 0 };
+      const s1 = engine.strengths.get(m.league + "|" + m.team1) || FB;
+      const s2 = engine.strengths.get(m.league + "|" + m.team2) || FB;
+      const base = engine.leagueAvg.get(m.league) || { H: engine.globalH, A: engine.globalA };
+      const lh = Math.max(0.2, base.H * s1.attH * s2.defA);
+      const la = Math.max(0.2, base.A * s2.attA * s1.defH);
+      const lhHT = lh * HTF, laHT = la * HTF;
+      const lh2 = lh - lhHT, la2 = la - laHT;
+      const tau = (i, j, l1, l2) => {
+        if (i === 0 && j === 0) return 1 - l1 * l2 * RHO;
+        if (i === 0 && j === 1) return 1 + l1 * RHO;
+        if (i === 1 && j === 0) return 1 + l2 * RHO;
+        if (i === 1 && j === 1) return 1 - RHO;
+        return 1;
+      };
+      let ph = 0, pd = 0, pa = 0, bi = 0, bj = 0, bp = 0, bttsY = 0, o25 = 0, tot = 0;
+      for (let i = 0; i <= 8; i++) {
+        for (let j = 0; j <= 8; j++) {
+          const p = poisson(i, lh) * poisson(j, la) * tau(i, j, lh, la);
+          tot += p;
+          if (i > j) ph += p; else if (i === j) pd += p; else pa += p;
+          if (i >= 1 && j >= 1) bttsY += p;
+          if (i + j > 2.5) o25 += p;
+          if (p > bp) { bp = p; bi = i; bj = j; }
+        }
+      }
+      ph /= tot; pd /= tot; pa /= tot;
+      let hph = 0, hpd = 0, hpa = 0, hbi = 0, hbj = 0, hbp = 0, hbtts = 0, ho15 = 0, htot = 0;
+      const PHt = [];
+      for (let i = 0; i <= 6; i++) {
+        PHt[i] = [];
+        for (let j = 0; j <= 6; j++) {
+          const p = poisson(i, lhHT) * poisson(j, laHT) * tau(i, j, lhHT, laHT);
+          htot += p; PHt[i][j] = p;
+          if (i > j) hph += p; else if (i === j) hpd += p; else hpa += p;
+          if (i >= 1 && j >= 1) hbtts += p;
+          if (i + j > 1.5) ho15 += p;
+          if (p > hbp) { hbp = p; hbi = i; hbj = j; }
+        }
+      }
+      for (let i = 0; i <= 6; i++) for (let j = 0; j <= 6; j++) PHt[i][j] /= htot;
+      hph /= htot; hpd /= htot; hpa /= htot;
+      const P2h = [];
+      for (let i = 0; i <= 6; i++) { P2h[i] = []; for (let j = 0; j <= 6; j++) P2h[i][j] = poisson(i, lh2) * poisson(j, la2) * tau(i, j, lh2, la2); }
+      let t2 = 0;
+      for (let i = 0; i <= 6; i++) for (let j = 0; j <= 6; j++) t2 += P2h[i][j];
+      for (let i = 0; i <= 6; i++) for (let j = 0; j <= 6; j++) P2h[i][j] /= t2;
+      const combos = {};
+      for (let i = 0; i <= 6; i++) for (let j = 0; j <= 6; j++) {
+        if (PHt[i][j] < 0.0005) continue;
+        for (let k = 0; k <= 6; k++) for (let l = 0; l <= 6; l++) {
+          const key = resLetter(i, j) + resLetter(i + k, j + l);
+          combos[key] = (combos[key] || 0) + PHt[i][j] * P2h[k][l];
+        }
+      }
+      let hft = "HH", hftp = 0;
+      for (const k in combos) if (combos[k] > hftp) { hftp = combos[k]; hft = k; }
+      const pick = (arr) => arr.sort((a, b) => b.p - a.p)[0];
+      const dc = pick([{ k: "1X", p: ph + pd }, { k: "X2", p: pd + pa }, { k: "12", p: ph + pa }]);
+      const bYes = bttsY / tot, bNo = 1 - bYes;
+      const ov = o25 / tot, un = 1 - ov;
+      const hdc = pick([{ k: "1X", p: hph + hpd }, { k: "X2", p: hpd + hpa }, { k: "12", p: hph + hpa }]);
+      const hbYes = hbtts / htot, hbNo = 1 - hbYes;
+      const hov = ho15 / htot, hun = 1 - hov;
+      const r1x2 = ph >= pd && ph >= pa ? "H" : (pd >= pa ? "D" : "A");
+      const picks = [
+        { k: "1x2", tag: "FT", label: "1X2", pick: r1x2, p: Math.max(ph, pd, pa) },
+        { k: "dc", tag: "FT", label: "D.Chance", pick: dc.k, p: dc.p },
+        { k: "btts", tag: "FT", label: "BTTS", pick: bYes >= bNo ? "Yes" : "No", p: Math.max(bYes, bNo) },
+        { k: "ou25", tag: "FT", label: "O/U 2.5", pick: ov >= un ? "Over" : "Under", p: Math.max(ov, un) },
+        { k: "ftscore", tag: "FT", label: "Score", pick: bi + "–" + bj, p: bp / tot },
+        { k: "htft", tag: "HT", label: "HT/FT", pick: hft, p: hftp },
+        { k: "htscore", tag: "HT", label: "HT Score", pick: hbi + "–" + hbj, p: hbp / htot },
+        { k: "htdc", tag: "HT", label: "HT D.Ch", pick: hdc.k, p: hdc.p },
+        { k: "htbtts", tag: "HT", label: "HT BTTS", pick: hbYes >= hbNo ? "Yes" : "No", p: Math.max(hbYes, hbNo) },
+        { k: "htou15", tag: "HT", label: "HT O/U 1.5", pick: hov >= hun ? "Over" : "Under", p: Math.max(hov, hun) }
+      ];
+      return {
+        h: Math.round(100 * ph), d: Math.round(100 * pd), a: Math.round(100 * pa),
+        score: bi + "–" + bj,
+        elo1: Math.round(engine.ratings.get(m.team1) || 1500),
+        elo2: Math.round(engine.ratings.get(m.team2) || 1500),
+        lowData: (s1.wAll < 8 || s2.wAll < 8),
+        picks: picks
+      };
+    }
+
+    // ===== GRADING =====
+    function gradePred(p, m) {
+      if (!m.score) return false;
+      const x = m.score[0], y = m.score[1];
+      const res = resLetter(x, y);
+      const ht = Array.isArray(m.ht) ? m.ht : null;
+      const u = ht ? ht[0] : null, v = ht ? ht[1] : null;
+      const hres = ht ? resLetter(u, v) : null;
+      let total = 0, hit = 0;
+      for (const pk of (p.picks || [])) {
+        let ok = null;
+        if (pk.k === "1x2") ok = pk.pick === res;
+        else if (pk.k === "ftscore") { const q = pk.pick.split("–"); ok = (Number(q[0]) === x && Number(q[1]) === y); }
+        else if (pk.k === "btts") ok = pk.pick === ((x >= 1 && y >= 1) ? "Yes" : "No");
+        else if (pk.k === "ou25") ok = pk.pick === ((x + y > 2.5) ? "Over" : "Under");
+        else if (pk.k === "dc") ok = pk.pick === "1X" ? res !== "A" : (pk.pick === "X2" ? res !== "H" : res !== "D");
+        else if (ht) {
+          if (pk.k === "htscore") { const q = pk.pick.split("–"); ok = (Number(q[0]) === u && Number(q[1]) === v); }
+          else if (pk.k === "htft") ok = pk.pick === (hres + res);
+          else if (pk.k === "htdc") ok = pk.pick === "1X" ? hres !== "A" : (pk.pick === "X2" ? hres !== "H" : hres !== "D");
+          else if (pk.k === "htbtts") ok = pk.pick === ((u >= 1 && v >= 1) ? "Yes" : "No");
+          else if (pk.k === "htou15") ok = pk.pick === ((u + v > 1.5) ? "Over" : "Under");
+        }
+        pk.ok = ok;
+        if (ok !== null) { total++; if (ok) hit++; }
+      }
+      p.picksTotal = total; p.picksHit = hit;
+      p.verdict = total > 0 ? (hit >= 1 ? "WIN" : "LOSE") : null;
+      p.call = (p.h >= p.d && p.h >= p.a) ? "H" : (p.d >= p.a ? "D" : "A");
+      p.actual = res;
+      p.correct = (p.call === res);
+      const q = (p.score || "0–0").split("–");
+      p.exact = (Number(q[0]) === x && Number(q[1]) === y);
+      return true;
+    }
+
+    // ===== TRACK RECORD LOG =====
+    async function updatePredictionsLog() {
+      try {
+        const upcoming = ALL.filter(m => !m.score).slice(0, 200);
+        if (upcoming.length === 0) return;
+        if (!ENGINE) ENGINE = buildEngine(ALL);
+        const preds = await dbAllPreds();
+        const byKey = new Map(preds.map(p => [p.key, p]));
+        const now = Date.now();
+        const toSave = [];
+        for (const m of upcoming) {
+          const pr = predict(ENGINE, m);
+          const existing = byKey.get(m.key);
+          if (existing) {
+            if (existing.verified) continue;
+            const kick = m.iso ? new Date(m.iso).getTime() : new Date(m.date + "T" + (m.time || "12:00") + ":00").getTime();
+            if (now > kick) continue;
+            existing.h = pr.h; existing.d = pr.d; existing.a = pr.a;
+            existing.score = pr.score; existing.elo1 = pr.elo1; existing.elo2 = pr.elo2;
+            existing.picks = pr.picks;
+            existing.computedAt = now;
+            toSave.push(existing);
+          } else {
+            toSave.push({ key: m.key, league: m.league, team1: m.team1, team2: m.team2, date: m.date, time: m.time, h: pr.h, d: pr.d, a: pr.a, score: pr.score, elo1: pr.elo1, elo2: pr.elo2, picks: pr.picks, computedAt: now, verified: false });
+          }
+        }
+        const matchByKey = new Map(ALL.map(m => [m.key, m]));
+        for (const p of byKey.values()) {
+          if (p.verified) continue;
+          const m = matchByKey.get(p.key);
+          if (m && m.score) {
+            if (gradePred(p, m)) { p.verified = true; toSave.push(p); }
+          }
+        }
+        if (toSave.length) await dbPutPreds(toSave);
+        PMAP = new Map((await dbAllPreds()).map(p => [p.key, p]));
+        renderCurrent();
+      } catch (e) { }
+    }
+
+    async function trackRecord() {
+      const preds = await dbAllPreds();
+      const ver = preds.filter(p => p.verified);
+      const correct = ver.filter(p => p.correct).length;
+      const exact = ver.filter(p => p.exact).length;
+      const wins = ver.filter(p => p.verdict === "WIN").length;
+      return {
+        logged: preds.length, verified: ver.length, correct, exact, wins,
+        pct: ver.length ? Math.round(100 * correct / ver.length) : 0,
+        pctExact: ver.length ? Math.round(100 * exact / ver.length) : 0,
+        pctWin: ver.length ? Math.round(100 * wins / ver.length) : 0
+      };
+    }
+
+    // ===== UI SHELL =====
+    function renderTopbar() {
+      const tb = document.getElementById("topbar");
+      const sw = document.getElementById("searchwrap");
+      if (matchKey) {
+        tb.innerHTML = '<button class="iconbtn" onclick="goBack()">←</button><div class="tbtitle">Match</div>';
+      } else if (currentTab === "fixtures" && view) {
+        tb.innerHTML = '<button class="iconbtn" onclick="goBack()">←</button><div class="tbtitle">' + (view === "all" ? "All games" : view) + '</div>';
+      } else if (currentTab === "fixtures") {
+        tb.innerHTML = '<div class="tbtitle">⚽ Acode Football</div><button class="iconbtn" onclick="toggleSearch()">🔍</button>';
+      } else {
+        tb.innerHTML = '<div class="tbtitle">⚽ Acode Football</div>';
+      }
+      sw.hidden = !(currentTab === "fixtures" && !view && !matchKey && searchOpen);
+    }
+
+    function toggleSearch() {
+      searchOpen = !searchOpen;
+      if (!searchOpen) { searchTerm = ""; document.getElementById("searchinput").value = ""; }
+      renderTopbar();
+      if (currentTab === "fixtures" && !view && !matchKey) renderFixtures();
+    }
+
+    function renderDates() {
+      const box = document.getElementById("dates");
+      box.hidden = !(currentTab === "fixtures" && !matchKey);
+      if (box.hidden) return;
+      const WD = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+      const t = new Date();
+      let html = "";
+      for (let i = -2; i <= 12; i++) {
+        const d = new Date(t.getTime() + i * 86400000);
+        const iso = isoOf(d);
+        const cls = "dchip" + (i === 0 ? " today" : "") + (iso === selDate ? " sel" : "");
+        html += '<div class="' + cls + '" onclick="pickDate(\'' + iso + '\')">' +
+          '<div class="dw">' + (i === 0 ? "TODAY" : WD[d.getDay()]) + '</div>' +
+          '<div class="dd">' + String(d.getDate()).padStart(2, "0") + "." + String(d.getMonth() + 1).padStart(2, "0") + '.</div></div>';
+      }
+      box.innerHTML = html;
+      const el = box.querySelector(".sel");
+      if (el) box.scrollLeft = el.offsetLeft - (box.clientWidth - el.offsetWidth) / 2;
+    }
+
+    function pickDate(iso) {
+      selDate = iso;
+      renderDates();
+      if (currentTab === "fixtures" && !matchKey) renderFixtures();
+    }
+
+    function goBack() {
+      if (matchKey) { matchKey = null; }
+      else if (view) { view = null; }
+      renderCurrent();
+      window.scrollTo(0, 0);
+    }
+
+    let ROWIDX = [];
+    function openMatchId(i) {
+      matchKey = ROWIDX[i];
+      renderTopbar();
+      renderDates();
+      renderMatchDetail();
+      window.scrollTo(0, 0);
+    }
+
+    function matchRow(m) {
+      const id = ROWIDX.push(m.key) - 1;
+      let center;
+      if (m.score) {
+        center = '<div class="mscore">' + m.score[0] + " – " + m.score[1] + '</div>' +
+          (m.ht ? '<div class="htmini">HT ' + m.ht[0] + "–" + m.ht[1] + '</div>' : '');
+      } else {
+        center = '<div class="mtime">' + (m.time || "TBD") + '</div>';
+      }
+      return '<div class="mrow" onclick="openMatchId(' + id + ')"><div class="mteams"><div class="t1">' + m.team1 +
+        '</div><div class="t2">' + m.team2 + '</div></div><div class="mcenter">' + center + '</div></div>';
+    }
+
+    function verdictHTML(m) {
+      const pr = PMAP ? PMAP.get(m.key) : null;
+      if (!pr || !pr.verified || !pr.verdict) return "";
+      const called = pr.call === "H" ? "Home" : (pr.call === "D" ? "Draw" : "Away");
+      return pr.verdict === "WIN"
+        ? '<div class="verdict vwin">🎉 WIN!! · ' + pr.picksHit + '/' + pr.picksTotal + ' picks hit · called ' + called + '</div>'
+        : '<div class="verdict vlose">❌ LOSE · 0/' + pr.picksTotal + ' picks hit</div>';
+    }
+
+    function renderFixtures() {
+      const list = document.getElementById("list");
+      ROWIDX = [];
+      let html = "";
+
+      if (view === "all") {
+        const ms = ALL.filter(m => !m.score && m.date === selDate);
+        if (ms.length === 0) {
+          list.innerHTML = '<div class="empty">No matches on ' + niceDate(selDate) + '.<br>Try another date above.</div>';
+          return;
+        }
+        const names = [...new Set(ms.map(m => m.league))].sort();
+        for (const n of names) {
+          const L = LEAGUES.find(x => x.name === n);
+          html += '<div class="sechead">' + (L ? L.flag + " " : "") + n + '</div>';
+          for (const m of ms.filter(x => x.league === n)) html += matchRow(m);
+        }
+        list.innerHTML = html;
+        return;
+      }
+
+      if (view) {
+        const L = LEAGUES.find(x => x.name === view);
+        const up = ALL.filter(m => m.league === view && !m.score && m.date >= selDate)
+          .sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || ""))).slice(0, 100);
+        const res = ALL.filter(m => m.league === view && m.score)
+          .sort((a, b) => b.date.localeCompare(a.date)).slice(0, 15);
+        html += '<div class="sechead">' + (L ? L.flag + " " : "") + (L ? L.country + " · " : "") + view + '</div>';
+        html += '<div class="sechead">UPCOMING · tap a match for prediction</div>';
+        if (up.length === 0) html += '<div class="empty">No upcoming matches from ' + niceDate(selDate) + '.</div>';
+        let lastDate = "";
+        for (const m of up) {
+          if (m.date !== lastDate) { lastDate = m.date; html += '<div class="day">' + niceDate(m.date) + '</div>'; }
+          html += matchRow(m);
+        }
+        html += '<div class="sechead">RECENT RESULTS</div>';
+        if (res.length === 0) html += '<div class="empty">No finished matches stored yet.</div>';
+        lastDate = "";
+        for (const m of res) {
+          if (m.date !== lastDate) { lastDate = m.date; html += '<div class="day">' + niceDate(m.date) + '</div>'; }
+          html += matchRow(m) + verdictHTML(m);
+        }
+        list.innerHTML = html;
+        return;
+      }
+
+      const onDate = ALL.filter(m => !m.score && m.date === selDate).length;
+      html += '<div class="allrow" onclick="view=\'all\'; renderTopbar(); renderFixtures(); window.scrollTo(0,0);">' +
+        '<div style="font-size:20px;">📋</div>' +
+        '<div style="flex:1;"><b>All games</b><div style="font-size:11px;color:#8b949e;">' + niceDate(selDate) + '</div></div>' +
+        '<div class="badge">' + onDate + '</div><div class="gray">' + ALL.length + '</div></div>';
+
+      html += '<div class="sechead">COMPETITIONS [A-Z]</div><div class="lwrap">';
+      const names = LEAGUES.map(l => l.name).sort()
+        .filter(n => n.toLowerCase().includes(searchTerm.toLowerCase()));
+      if (names.length === 0) html += '<div class="lrow"><div class="lmeta">No competition matches your search.</div></div>';
+      for (const n of names) {
+        const L = LEAGUES.find(x => x.name === n);
+        const c = ALL.filter(m => m.league === n && !m.score && m.date === selDate).length;
+        html += '<div class="lrow" onclick="view=\'' + n + '\'; renderTopbar(); renderFixtures(); window.scrollTo(0,0);">' +
+          '<div class="lflag">' + (L ? L.flag : "⚽") + '</div>' +
+          '<div class="lmeta"><div class="lcountry">' + (L ? L.country : "") + '</div>' +
+          '<div class="lname">' + n + '</div></div>' +
+          '<div class="lcount">' + c + '</div></div>';
+      }
+      html += '</div>';
+      list.innerHTML = html;
+    }
+
+    // ===== MATCH DETAIL =====
+    function pickChip(pk) {
+      const disp = pk.k === "htft" ? pk.pick[0] + "/" + pk.pick[1] : pk.pick;
+      let cls = "pick", mark = "";
+      if (pk.ok === true) { cls += " hit"; mark = " ✓"; }
+      else if (pk.ok === false) { cls += " miss"; mark = " ✗"; }
+      return '<div class="' + cls + '"><span class="ptag">' + pk.tag + '</span> ' + pk.label + ': <b>' + disp + '</b> · ' + Math.round(pk.p * 100) + '%' + mark + '</div>';
+    }
+
+    function renderMatchDetail() {
+      const list = document.getElementById("list");
+      const m = MATCHBYKEY.get(matchKey);
+      if (!m) { list.innerHTML = '<div class="empty">Match not found.</div>'; return; }
+      const L = LEAGUES.find(x => x.name === m.league);
+      let html = '<div class="sechead backline">' + (L ? L.flag + " " : "") + (L ? L.country + " · " : "") + m.league + '</div>';
+      html += '<div class="match">';
+      html += '<div class="league">' + niceDate(m.date) + ' · ' + (m.time || "TBD") + ' (TV time)</div>';
+      let center;
+      if (m.score) center = '<span class="mscore">' + m.score[0] + " – " + m.score[1] + '</span>';
+      else center = '<span class="mtime">' + (m.time || "TBD") + '</span>';
+      html += '<div class="teams"><span><b>' + m.team1 + '</b></span>' + center + '<span><b>' + m.team2 + '</b></span></div>';
+      if (m.ht) html += '<div class="htmini" style="text-align:center;">Half-time: ' + m.ht[0] + "–" + m.ht[1] + '</div>';
+
+      if (!m.score) {
+        if (!ENGINE) ENGINE = buildEngine(ALL);
+        const p = predict(ENGINE, m);
+        html += '<div class="elo">Elo: ' + p.elo1 + ' vs ' + p.elo2 + (p.lowData ? " · ⚠ limited history" : "") + '</div>';
+        html += '<div class="prow"><span class="plabel">Home</span><div class="pbar-track"><div class="pbar b-home" style="width:' + p.h + '%"></div></div><span class="pval">' + p.h + '%</span></div>';
+        html += '<div class="prow"><span class="plabel">Draw</span><div class="pbar-track"><div class="pbar b-draw" style="width:' + p.d + '%"></div></div><span class="pval">' + p.d + '%</span></div>';
+        html += '<div class="prow"><span class="plabel">Away</span><div class="pbar-track"><div class="pbar b-away" style="width:' + p.a + '%"></div></div><span class="pval">' + p.a + '%</span></div>';
+        html += '<div class="pgrid">';
+        for (const pk of p.picks) html += pickChip(pk);
+        html += '</div>';
+        html += '<div class="disclaimer">🔮 Probabilities, not guarantees. Logged now, graded after full-time.</div>';
+      } else {
+        const pr = PMAP ? PMAP.get(m.key) : null;
+        if (pr && pr.verified && pr.verdict) {
+          html += pr.verdict === "WIN"
+            ? '<div class="verdict vwin">🎉 WIN!! · ' + pr.picksHit + '/' + pr.picksTotal + ' picks hit</div>'
+            : '<div class="verdict vlose">❌ LOSE · 0/' + pr.picksTotal + ' picks hit</div>';
+          html += '<div class="sechead">GRADED PICKS</div><div class="pgrid">';
+          for (const pk of (pr.picks || [])) html += pickChip(pk);
+          html += '</div>';
+          html += '<div class="disclaimer">✓ hit · ✗ missed · – HT unavailable from source.</div>';
+        } else {
+          html += '<div class="empty">No logged prediction for this match.<br>Matches from now on are graded automatically.</div>';
+        }
+      }
+      html += '</div>';
+      list.innerHTML = html;
+    }
+
+    // ===== RESULTS TAB =====
+    let currentList = [];
+    let shown = 30;
+
+    function loadMore() { shown += 30; renderResults(); }
+
+    function renderResults() {
+      const list = document.getElementById("list");
+      ROWIDX = [];
+      const slice = currentList.slice(0, shown);
+      let html = "";
+      let lastDate = "";
+
+      if (TRACK) {
+        html += '<div class="track">📈 <b>Track record:</b> ' + TRACK.verified + ' verified · <b>' +
+          TRACK.pct + '%</b> 1X2 hits · <b>' + TRACK.pctWin + '%</b> WIN days · <b>' + TRACK.pctExact +
+          '%</b> exact FT scores</div>';
+      }
+      html += '<div class="disclaimer">Tap any finished match to see the pick-by-pick ✓/✗ breakdown.</div>';
+
+      if (slice.length === 0) {
+        html += '<div class="empty">No finished matches stored yet.<br>Tap the status bar to sync.</div>';
+        list.innerHTML = html;
+        return;
+      }
+
+      for (const m of slice) {
+        if (m.date !== lastDate) { lastDate = m.date; html += '<div class="day">' + niceDate(m.date) + '</div>'; }
+        html += matchRow(m) + verdictHTML(m);
+      }
+
+      if (currentList.length > shown) {
+        html += '<div class="loadmore" onclick="loadMore()">⬇ Load 30 more · ' + (currentList.length - shown) + ' remaining</div>';
+      }
+      list.innerHTML = html;
+    }
+
+    function renderCurrent() {
+      renderTopbar();
+      renderDates();
+      if (currentTab === "fixtures") {
+        if (matchKey) renderMatchDetail(); else renderFixtures();
+      } else {
+        renderResults();
+      }
+    }
+
+    function showTab(name) {
+      currentTab = name;
+      shown = 30;
+      matchKey = null;
+      document.getElementById("tab-fixtures").classList.toggle("active", name === "fixtures");
+      document.getElementById("tab-results").classList.toggle("active", name === "results");
+
+      if (name === "results") {
+        currentList = ALL.filter(m => m.score).reverse();
+        TRACK = null;
+        trackRecord().then(t => { TRACK = t; if (currentTab === "results") renderResults(); });
+      }
+      renderCurrent();
+    }
+
+    (async function init() {
+      if (localStorage.getItem("acode-timemode") !== TIMEMODE) {
+        try {
+          const db = await openDB();
+          await new Promise((res) => {
+            const tx = db.transaction(STORE, "readwrite");
+            tx.objectStore(STORE).clear();
+            tx.oncomplete = () => res();
+            tx.onerror = () => res();
+          });
+        } catch (e) { }
+        localStorage.setItem("acode-timemode", TIMEMODE);
+        localStorage.setItem("acode-last-full", "0");
+      }
+
+      ALL = await dbAll();
+      ALL.sort((a, b) => a.date.localeCompare(b.date));
+      MATCHBYKEY = new Map(ALL.map(m => [m.key, m]));
+      SCORED = ALL.filter(m => m.score).length;
+      showTab("fixtures");
+
+      syncData(false).then(() => {
+        const last = Number(localStorage.getItem("acode-last-full") || 0);
+        if (Date.now() - last > FULL_EVERY_MS) {
+          return syncData(true).then(() => localStorage.setItem("acode-last-full", String(Date.now())));
+        }
+      });
+      setInterval(() => { if (!document.hidden) syncData(false); }, REFRESH_MS);
+    })();
+  </script>
+</body>
+</html>
